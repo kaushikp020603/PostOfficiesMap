@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Offices Search</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin: 20px;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        #map {
+            width: 100%;
+            height: 600px;
+            margin-top: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 800px;
+        }
+
+        .search-container input {
+            padding: 10px;
+            margin: 0 10px;
+            width: 200px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .search-container input:focus {
+            border-color: #3498db;
+        }
+
+        .search-container button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .search-container button:hover {
+            background-color: #2980b9;
+        }
+
+        .search-container button:focus {
+            outline: none;
+        }
+
+        @media (max-width: 768px) {
+            .search-container {
+                flex-direction: column;
+                width: 90%;
+            }
+
+            .search-container input {
+                width: 100%;
+                margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+<h1>Search for Post Offices</h1>
+
+<!-- Search Box -->
+<div class="search-container">
+    <input type="text" id="district" placeholder="Enter District" />
+    <input type="text" id="office_name" placeholder="Enter Post Office Name" />
+    <input type="text" id="pincode" placeholder="Enter Pincode" />
+    <button onclick="searchPostOffice()">Search</button>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    // Initialize the map
+    var map = L.map('map').setView([20.5937, 78.9629], 5); // Center on India
+
+    // Add OpenStreetMap tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Function to search post office and display it on map
+    function searchPostOffice() {
+        var district = document.getElementById('district').value.trim();
+        var office_name = document.getElementById('office_name').value.trim();
+        var pincode = document.getElementById('pincode').value.trim();
+
+        // Clear existing markers
+        map.eachLayer(function(layer) {
+            if (layer instanceof L.Marker) {
+                map.removeLayer(layer);
+            }
+        });
+
+        // Fetch the post offices matching the query
+        fetch(`/search_post_office?district=${district}&office_name=${office_name}&pincode=${pincode}`)
+            .then(response => response.json())
+            .then(postOffices => {
+                if (postOffices.length === 0) {
+                    alert('No post office found.');
+                } else {
+                    // Place a marker for each search result
+                    postOffices.forEach(postOffice => {
+                        const latitude = parseFloat(postOffice.latitude);
+                        const longitude = parseFloat(postOffice.longitude);
+                        const officeName = postOffice.office_name;
+                        const pincode = postOffice.pincode;
+                        const district = postOffice.district;
+
+                        // Add a marker to the map
+                        L.marker([latitude, longitude]).addTo(map)
+                            .bindPopup(`<b>${officeName}</b><br>Pincode: ${pincode}<br>District: ${district}`);
+                    });
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching post office data:', err);
+                alert('An error occurred while fetching data.');
+            });
+    }
+</script>
+</body>
+</html>
